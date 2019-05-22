@@ -1,0 +1,25 @@
+stages:
+  - build
+  - deploy
+
+build prod:
+  image: node:10.15.0-stretch
+  stage: build
+  script:
+    - npm ci
+    - npm run generate
+  artifacts:
+    paths:
+      - dist/
+      - node_modules/
+    expire_in: 1 hour
+
+deploy prod:
+  image: node:10.15.0-stretch
+  stage: deploy
+  only:
+    - master
+  script:
+    - npm install serverless -g
+    - sls deploy --stage prd
+    - sls info --verbose

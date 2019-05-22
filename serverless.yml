@@ -1,0 +1,83 @@
+service: SITENAME-${self:provider.stage}
+
+plugins:
+   - serverless-s3-sync
+
+custom:
+   s3Bucket: ${self:service}
+   s3Sync:
+      - bucketName: ${self:custom.s3Bucket}
+        localDir: dist
+   defaultCNAME: ${self:provider.stage}.sitedomain.com
+
+provider:
+   name: aws
+   stage: ${opt:stage, 'dev'}
+   region: ${opt:region, 'us-east-1'}
+
+resources:
+   Resources:
+      WebAppS3Bucket:
+         Type: AWS::S3::Bucket
+         Properties:
+            BucketName: ${self:custom.s3Bucket}
+            AccessControl: PublicRead
+            WebsiteConfiguration:
+               IndexDocument: index.html
+               ErrorDocument: index.html
+
+      WebAppS3BucketPolicy:
+         Type: AWS::S3::BucketPolicy
+         Properties:
+            Bucket:
+               Ref: WebAppS3Bucket
+            PolicyDocument:
+               Statement:
+                  - Sid: PublicReadGetObject
+                    Effect: Allow
+                    Principal: "*"
+                    Action:
+                     - s3:GetObject
+                    Resource: arn:aws:s3:::${self:custom.s3Bucket}/*
+
+      WebAppCloudFrontDistribution:
+         Type: AWS::CloudFront::Distribution
+         Properties:
+            DistributionConfig:
+               Origins:
+                  # Using the s3 static website address intead of the bucket name allows
+                  # us to access subdirectories without adding /index.html
+                  - DomainName: ${self:custom.s3Bucket}.s3-website-${self:provider.region}.amazonaws.com
+                    # An identifier for the origin which must be unique within the distribution
+                    Id: website-bucket
+                    CustomOriginConfig:
+                        HTTPPort: 80
+                        HTTPSPort: 443
+                        OriginProtocolPolicy: http-only
+               Enabled: 'true'
+               Aliases:
+                  'Fn::Split':
+                     - ','
+                     - ${env:CNAMES, self:custom.defaultCNAME}
+               DefaultRootObject: index.html
+               DefaultCacheBehavior:
+                  AllowedMethods:
+                     - HEAD
+                     - GET
+                  # The origin id defined above
+                  TargetOriginId: website-bucket
+                  ForwardedValues:
+                     QueryString: 'false'
+                     Cookies:
+                        Forward: none
+                  ViewerProtocolPolicy: redirect-to-https
+               ViewerCertificate:
+                  AcmCertificateArn: CERTIFICATE_ARN
+                  SslSupportMethod: sni-only
+
+   # In order to print out the hosted domain via `serverless info` we need to define the
+   # DomainName output for CloudFormation
+   Outputs:
+      WebAppCloudFrontDistributionOutput:
+         Value:
+           'Fn::GetAtt': [ WebAppCloudFrontDistribution, DomainName ]

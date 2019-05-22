@@ -1,0 +1,34 @@
+{
+  "name": "nuxt_serverless_starter",
+  "version": "1.0.0",
+  "description": "Starter template for Nuxt serverless sites",
+  "author": "Jim Jenkins",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "lint": "eslint --ext .js,.vue --ignore-pattern 'dist/**/*' ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@commitlint/cli": "7.5.2",
+    "@creativepenguin/standards": "0.1.0",
+    "cross-env": "5.2.0",
+    "eslint": "5.16.0",
+    "husky": "2.1.0",
+    "node-sass": "4.12.0",
+    "nodemon": "1.19.0",
+    "nuxt": "2.7.1",
+    "nuxt-buefy": "0.3.6",
+    "sass-loader": "7.1.0",
+    "serverless-s3-sync": "1.8.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  }
+}
